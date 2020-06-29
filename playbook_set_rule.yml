@@ -1,0 +1,49 @@
+# ansible-playbook playbook_set_srule.yml
+---
+- hosts: localhost
+  connection: local
+
+  roles:
+    - role: PaloAltoNetworks.paloaltonetworks
+
+  tasks: 
+    - name: include variables (free-form)
+      include_vars: firewall_secret.yml  
+      no_log: 'yes'
+
+    - name: Add 172.16.3.0/24 address object
+      panos_object:
+        ip_address: '{{ ip_address }}'
+        password: '{{ password }}'
+        operation: 'add'
+        addressobject: 'new-network-172.16.3.0'
+        address: '172.16.3.0/24'
+        address_type: 'ip-netmask'
+        description: 'This is a test network address object'
+
+    - name: Add 172.16.5.101 address object
+      panos_object:
+        ip_address: '{{ ip_address }}'
+        password: '{{ password }}'
+        operation: 'add'
+        addressobject: 'server1'
+        address: '172.16.5.101'
+        address_type: 'ip-netmask'
+        description: 'This is the internal server'
+
+    - name: Add rule to the firewall
+      panos_security_rule:
+        ip_address: '{{ ip_address }}'
+        password: '{{ password }}'
+        rule_name: 'Ansible allow http and ping'
+        source_zone: ['Trust']
+        destination_zone: ['Untrust']
+        source_ip: ['new-network-172.16.3.0']
+        source_user: ['any']
+        destination_ip: ['server1']
+        category: ['any']
+        application: ['ping', 'ssh', 'web-browsing', 'ssl']
+        service: ['application-default']
+        hip_profiles: ['any']
+        action: 'allow'
+        commit: 'False'
